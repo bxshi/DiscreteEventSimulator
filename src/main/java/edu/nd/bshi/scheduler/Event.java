@@ -2,6 +2,7 @@ package edu.nd.bshi.scheduler;
 
 public class Event {
     public static enum EVENT_TYPE {
+        DATA_COMPUTE,
         READ_DISK,
         WRITE_DISK,
         READ_RAM,
@@ -40,7 +41,7 @@ public class Event {
         return eventType;
     }
 
-    public void AddTime(int time) {
+    public void addTime(int time) {
         if(this.process!=null)
             this.process.addExecutionTime(time);
         if(this.thread!=null)

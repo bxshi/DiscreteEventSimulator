@@ -69,28 +69,33 @@ public class Main {
         while(true) {
             Event event = scheduler.getEvent();
             if(event == null){
+                logger.info(scheduler.getAccumulatedExecutionTime());
                 System.exit(0);
             }else{
                 logger.trace(event.toString());
                 switch(event.getEventType()){
                     case SWITCH_PROCESS_CONTEXT:
-                        event.AddTime(1);
+                        event.addTime(1);
+                        //dirty trick
+                        scheduler.addAccumulatedExecutionTime(1);
                         break;
                     case SWITCH_THREAD_CONTEXT:
-                        event.AddTime(1);
+                        event.addTime(1);
                         break;
                     case READ_DISK:
-                        event.AddTime(1);
+                        event.addTime(2);
                         break;
                     case WRITE_DISK:
-                        event.AddTime(1);
+                        event.addTime(3);
                         break;
                     case READ_RAM:
-                        event.AddTime(1);
+                        event.addTime(1);
                         break;
                     case WRITE_RAM:
-                        event.AddTime(1);
+                        event.addTime(1);
                         break;
+                    case DATA_COMPUTE:
+                        event.addTime(1);
                 }
             }
         }
