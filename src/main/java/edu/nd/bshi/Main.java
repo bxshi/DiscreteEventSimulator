@@ -1,5 +1,6 @@
 package edu.nd.bshi;
 
+import edu.nd.bshi.scheduler.Disk;
 import edu.nd.bshi.scheduler.Event;
 import edu.nd.bshi.scheduler.OperationPattern;
 import edu.nd.bshi.scheduler.Scheduler;
@@ -38,17 +39,19 @@ public class Main {
                 options.put("operation", Integer.parseInt(arg.substring(2)));
             }else if(arg.startsWith("-T")){
                 options.put("type", OperationPattern.TYPE.valueOf(arg.substring(2)));
+            }else if(arg.startsWith("-S")){
+                options.put("seek_time", Integer.parseInt(arg.substring(2)));
             }
 
         }
 
-        if(options.keySet().size()!=10){
+        if(options.keySet().size()!=11){
             logger.error("\ndes [-VM VirtualMemory Size] [-PM Physical Memory Size]\n" +
                     "    [-D Disk Size] [-P Process Number]\n" +
                     "    [-TP Thread Per Process] [-M Memory Per Process]\n" +
                     "    [-PS Process Time Slot] [-TS Thread Time Slot]\n" +
-                    "    [-T Thread Operation Pattern (RANDOM|SERVER|DATABASE)]" +
-                    "    [-O Operations per Thread]");
+                    "    [-T Thread Operation Pattern (RANDOM|SERVER|DATABASE)]\n" +
+                    "    [-O Operations per Thread] [-S Seek Time]");
             return;
         }
 
@@ -64,6 +67,9 @@ public class Main {
                 (Integer)options.get("thread_time"),
                 (OperationPattern.TYPE)options.get("type"),
                 (Integer)options.get("operation")
+        );
+        Disk disk = new Disk(
+                (Integer)options.get("seek_time")
         );
 
         while(true) {
@@ -83,10 +89,10 @@ public class Main {
                         event.addTime(1);
                         break;
                     case READ_DISK:
-                        event.addTime(2);
+                        disk.read(event);
                         break;
                     case WRITE_DISK:
-                        event.addTime(3);
+                        disk.write(event);
                         break;
                     case READ_RAM:
                         event.addTime(1);
