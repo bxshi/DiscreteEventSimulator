@@ -1,9 +1,6 @@
 package edu.nd.bshi;
 
-import edu.nd.bshi.scheduler.Disk;
-import edu.nd.bshi.scheduler.Event;
-import edu.nd.bshi.scheduler.OperationPattern;
-import edu.nd.bshi.scheduler.Scheduler;
+import edu.nd.bshi.scheduler.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -72,6 +69,11 @@ public class Main {
                 (Integer)options.get("seek_time")
         );
 
+        Memory memory = new Memory(
+                (Integer)options.get("virtual_memory"),
+                (Integer)options.get("physical_memory")
+        );
+
         while(true) {
             Event event = scheduler.getEvent();
             if(event == null){
@@ -95,10 +97,10 @@ public class Main {
                         disk.write(event);
                         break;
                     case READ_RAM:
-                        event.addTime(1);
+                        memory.read(event);
                         break;
                     case WRITE_RAM:
-                        event.addTime(1);
+                        memory.write(event);
                         break;
                     case DATA_COMPUTE:
                         event.addTime(1);
