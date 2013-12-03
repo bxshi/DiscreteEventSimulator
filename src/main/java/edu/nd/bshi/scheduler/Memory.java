@@ -72,7 +72,6 @@ public class Memory {
         try{
             for(int i = event.getBaseAddress(); i < event.getBaseAddress()+event.getAddressLength(); i++) {
                 if(memorySpace.get(i) == OUT_MEM){
-                    //TODO not in memory, need to do a disk load
                     int t = this.loadMemory(i);
                     if(t > time) time = t;
                 }else{
@@ -86,7 +85,8 @@ public class Memory {
         }catch (Exception err){
             err.printStackTrace();
         }
-
+        if(time!=0)
+            event.addPageFault(1);
         event.addTime(time+blockInMemoryRead);
 
     }
@@ -96,7 +96,6 @@ public class Memory {
         try{
             for(int i = event.getBaseAddress(); i < event.getBaseAddress()+event.getAddressLength(); i++) {
                 if(memorySpace.get(i) == OUT_MEM){
-                    //TODO not in memory, need to do a disk load
                     int t = this.loadMemory(i);
                     memorySpace.put(i, DIRTY);
                     if(t > time) time = t;
@@ -111,7 +110,8 @@ public class Memory {
         }catch (Exception err){
             err.printStackTrace();
         }
-
+        if(time!=0)
+            event.addPageFault(1);
         event.addTime(time+blockInMemoryWrite);
     }
 

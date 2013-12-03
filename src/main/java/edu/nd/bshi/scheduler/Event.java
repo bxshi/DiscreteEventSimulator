@@ -41,6 +41,15 @@ public class Event {
         return eventType;
     }
 
+    public void addPageFault(int time){
+        if(this.process!=null){
+            this.process.addPageFaultCount(time);
+        }
+        if(this.thread!=null){
+            this.thread.addPageFaultCount(time);
+        }
+    }
+
     public void addTime(int time) {
         if(this.process!=null)
             this.process.addExecutionTime(time);

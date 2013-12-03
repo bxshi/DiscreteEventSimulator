@@ -10,7 +10,6 @@ public class Main {
 
     static Logger logger = LogManager.getLogger(Main.class.getName());
 
-
     public static void main(String[] args) {
 
         HashMap<String, Object> options = new HashMap<String, Object>();
@@ -82,6 +81,7 @@ public class Main {
             Event event = scheduler.getEvent();
             if(event == null){
                 logger.info(scheduler.getAccumulatedExecutionTime());
+                logger.info(scheduler.getPageFaultCount());
                 System.exit(0);
             }else{
                 logger.trace(event.toString());

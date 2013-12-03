@@ -49,6 +49,7 @@ public class Scheduler extends BaseThread {
             event = this.currentProcess.getEvent();
             if(event == null) {
                 this.addAccumulatedExecutionTime(this.currentProcess.getAccumulatedExecutionTime());
+                this.addPageFaultCount(this.currentProcess.getPageFaultCount());
                 this.currentProcess = null;
                 if(this.priorityQueue.size()>0){
                     event = this.getEvent();
