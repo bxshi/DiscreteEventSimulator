@@ -4,6 +4,7 @@ public class OperationPattern {
     public static enum TYPE{
         RANDOM,
         SERVER,
-        DATABASE
+        DATABASE,
+        MEMONLY
     }
 }

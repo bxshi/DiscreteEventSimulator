@@ -97,6 +97,20 @@ public class Process extends BaseThread {
                 //TODO implement other patterns
                 case SERVER:
                 case DATABASE:
+                    break;
+                case MEMONLY:
+                    if(eventSelector <= 45) {
+                        int baseAddr = random.nextInt(this.memorySize);
+                        int readSize = random.nextInt(this.memorySize - baseAddr);
+                        event = new Event(Event.EVENT_TYPE.READ_RAM,
+                                this.memoryBaseAddress+baseAddr, readSize, this, this.currentThread);
+                    }else if(eventSelector <=90){
+                        int baseAddr = random.nextInt(this.memorySize);
+                        int readSize = random.nextInt(this.memorySize - baseAddr);
+                        event = new Event(Event.EVENT_TYPE.WRITE_RAM,
+                                this.memoryBaseAddress+baseAddr, readSize, this, this.currentThread);
+                    }
+                    break;
                 case RANDOM:
                     if(eventSelector <= 25) {
                         int baseAddr = random.nextInt(this.diskSize);
