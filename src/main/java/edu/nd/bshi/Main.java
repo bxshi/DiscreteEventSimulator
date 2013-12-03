@@ -38,17 +38,20 @@ public class Main {
                 options.put("type", OperationPattern.TYPE.valueOf(arg.substring(2)));
             }else if(arg.startsWith("-S")){
                 options.put("seek_time", Integer.parseInt(arg.substring(2)));
+            }else if(arg.startsWith("-W")){
+                options.put("work_load", true);
             }
 
         }
 
-        if(options.keySet().size()!=11){
+        if(options.keySet().size()<11){
             logger.error("\ndes [-VM VirtualMemory Size] [-PM Physical Memory Size]\n" +
                     "    [-D Disk Size] [-P Process Number]\n" +
                     "    [-TP Thread Per Process] [-M Memory Per Process]\n" +
                     "    [-PS Process Time Slot] [-TS Thread Time Slot]\n" +
                     "    [-T Thread Operation Pattern (RANDOM|SERVER|DATABASE)]\n" +
-                    "    [-O Operations per Thread] [-S Seek Time]");
+                    "    [-O Operations per Thread] [-S Seek Time]\n" +
+                    "    [-W withWorkload]");
             return;
         }
 
@@ -71,7 +74,8 @@ public class Main {
 
         Memory memory = new Memory(
                 (Integer)options.get("virtual_memory"),
-                (Integer)options.get("physical_memory")
+                (Integer)options.get("physical_memory"),
+                options.keySet().contains("work_load") ? (Boolean)options.get("work_load") : false
         );
 
         while(true) {
