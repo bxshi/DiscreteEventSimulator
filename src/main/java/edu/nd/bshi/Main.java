@@ -51,7 +51,7 @@ public class Main {
                     "    [-PS Process Time Slot] [-TS Thread Time Slot]\n" +
                     "    [-T Thread Operation Pattern (RANDOM|SERVER|DATABASE)]\n" +
                     "    [-O Operations per Thread] [-S Seek Time]\n" +
-                    "    [-W withWorkload]");
+                    "    [-W withWorkload (Optional)]");
             return;
         }
 
