@@ -12,7 +12,8 @@ public class MemoryTest {
 
     @Test
     public void testReadWithLRU() throws Exception {
-        Memory memory = new Memory(1000, 500, true);
+        Disk disk = new Disk(50);
+        Memory memory = new Memory(1000, 500, true, disk);
         Thread t1 = new Thread(2);
         Thread t2 = new Thread(2);
         Event eventLocalP1 = new Event(Event.EVENT_TYPE.READ_RAM, 0, 200, null, t1);
@@ -42,7 +43,8 @@ public class MemoryTest {
 
     @Test
     public void testWrite() throws Exception {
-        Memory memory = new Memory(1000, 500, true);
+        Disk disk = new Disk(50);
+        Memory memory = new Memory(1000, 500, true, disk);
         Thread t1 = new Thread(2);
         Thread t2 = new Thread(2);
         Event eventLocalP1 = new Event(Event.EVENT_TYPE.READ_RAM, 0, 200, null, t1);

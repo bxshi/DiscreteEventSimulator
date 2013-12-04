@@ -8,7 +8,7 @@ import java.util.Random;
 
 public class Memory {
     static Logger logger = LogManager.getLogger(Process.class.getName());
-
+    private Disk disk = null;
     private int blockLoadTime = 164000;
     private int blockWriteTime = 164000;
     private int blockInMemoryRead = 1;
@@ -19,8 +19,9 @@ public class Memory {
     private static final int OUT_MEM = 0;
     private static final int DIRTY = 2;
     private boolean hasLRU = true;
-    public Memory(int virtualMemSize, int physicalMemSize, boolean hasLRU) {
+    public Memory(int virtualMemSize, int physicalMemSize, boolean hasLRU, Disk disk) {
         this.hasLRU = hasLRU;
+        this.disk = disk;
         //initialize memory
         for(int i = 0; i < physicalMemSize; i++) {
             memorySpace.put(i, IN_MEM);
@@ -38,7 +39,7 @@ public class Memory {
         if(this.hasLRU)
             this.LRU.put(blk, 1);
         this.memorySpace.put(blk, IN_MEM);
-        return time;
+        return time + this.disk.loadMemory(blk);
     }
 
     private int removeMemory(){
@@ -54,22 +55,22 @@ public class Memory {
             }
 
             if(this.memorySpace.get(lowest) == DIRTY){
-                time += this.blockWriteTime;
+                time += this.disk.writeMemory(lowest);
             }
             this.memorySpace.put(lowest, OUT_MEM);
             this.LRU.remove(lowest);
 
             logger.trace("kick out "+lowest);
 
-            return time + this.blockLoadTime;
+            return time;
         }else{
             int rdm = (new Random().nextInt() % this.memorySpace.keySet().size());
             while(this.memorySpace.get(rdm)==null || this.memorySpace.get(rdm)==OUT_MEM)
                 rdm = (new Random().nextInt() % this.memorySpace.keySet().size());
             if(this.memorySpace.get(rdm) == DIRTY)
-                time += this.blockWriteTime;
+                time += this.disk.writeMemory(rdm);
             this.memorySpace.put(rdm, OUT_MEM);
-            return time + this.blockLoadTime;
+            return time;
         }
     }
 

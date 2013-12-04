@@ -80,7 +80,8 @@ public class Main {
         Memory memory = new Memory(
                 (Integer)options.get("virtual_memory"),
                 (Integer)options.get("physical_memory"),
-                options.keySet().contains("work_load") ? (Boolean)options.get("work_load") : false
+                options.keySet().contains("work_load") ? (Boolean)options.get("work_load") : false,
+                disk
         );
 
         while(true) {
