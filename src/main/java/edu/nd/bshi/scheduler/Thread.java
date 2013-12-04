@@ -2,7 +2,16 @@ package edu.nd.bshi.scheduler;
 
 public class Thread extends BaseThread {
 
+    public int getMaxOperations() {
+        return maxOperations;
+    }
+
     private int maxOperations = 0;
+
+    public int getOperationCounter() {
+        return operationCounter;
+    }
+
     private int operationCounter = 0;
 
     Thread(int maxOperations){

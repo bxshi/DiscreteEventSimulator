@@ -14,6 +14,11 @@ public class Event {
     private EVENT_TYPE eventType;
     private int baseAddress;
     private int addressLength;
+
+    public Thread getThread() {
+        return thread;
+    }
+
     Thread thread;
     Process process;
 

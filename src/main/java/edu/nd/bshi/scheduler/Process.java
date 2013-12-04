@@ -11,22 +11,26 @@ public class Process extends BaseThread {
 
     private PriorityQueue<Thread> priorityQueue = null;
 
+    private static final int READ_RANGE = 200;
+
     private int memoryBaseAddress = 0;
     private int memorySize = 0;
     private int diskBaseAddress = 0;
     private int diskSize = 0;
     private int timeSlot = 0;
+    private int workloadRatio = 50; // only used for patterned memory access
     private Thread currentThread = null;
     private OperationPattern.TYPE type;
 
     public Process(int memoryBaseAddress, int memorySize, int diskBaseAddress, int diskSize,
-                   int threadNumber, int timeSlot, OperationPattern.TYPE type, int operationPerThread) {
+                   int threadNumber, int timeSlot, OperationPattern.TYPE type, int operationPerThread, int workloadRatio) {
         this.memoryBaseAddress = memoryBaseAddress;
         this.memorySize = memorySize;
         this.diskBaseAddress = diskBaseAddress;
         this.diskSize = diskSize;
         this.timeSlot = timeSlot;
         this.type = type;
+        this.workloadRatio = workloadRatio;
         //at least one thread
         threadNumber = threadNumber == 0 ? threadNumber+1 : threadNumber;
         this.priorityQueue = new PriorityQueue<Thread>(threadNumber, new ThreadPriorityComparator());
@@ -58,6 +62,7 @@ public class Process extends BaseThread {
             return false;
         }
         if(this.currentThread == null) {
+            //no thread, get a new one from pool
             this.currentThread = this.priorityQueue.poll();
             return true;
         }
@@ -67,11 +72,15 @@ public class Process extends BaseThread {
             );
             this.currentThread.setExecutionTime(0);
             logger.trace("switch Thread, current "+this.currentThread);
-            this.priorityQueue.add(this.currentThread);
+            if(this.currentThread.getOperationCounter() < this.currentThread.getMaxOperations())
+                this.priorityQueue.add(this.currentThread);
             logger.trace("Process status "+this.priorityQueue);
             this.currentThread = this.priorityQueue.poll();
             logger.trace("new thread "+this.currentThread);
-            return true;
+            if(this.currentThread!=null)
+                return true;
+            else
+                return false;
         }
         return false;
     }
@@ -86,56 +95,87 @@ public class Process extends BaseThread {
         Random random = new Random();
         int eventSelector = random.nextInt(100)+1;
 
-        threadFinished();
+        //check if the thread finish it work
+        if(threadFinished()){
+            logger.info("thread"+this.currentThread+" FINISHED");
+        }
+
+        //check if the process finish its work
         if(processFinished()){
+            logger.info("process Finished");
             return null;
         }
         if (this.switchContext()){
             event = new Event(Event.EVENT_TYPE.SWITCH_THREAD_CONTEXT, this, null);
         }else{
+            int baseAddr;
+            int readSize;
+            this.currentThread.addCounter();
             switch(this.type){
                 //TODO implement other patterns
                 case SERVER:
                 case DATABASE:
                     break;
-                case MEMONLY:
-                    if(eventSelector <= 45) {
-                        int baseAddr = random.nextInt(this.memorySize);
-                        int readSize = random.nextInt(this.memorySize - baseAddr);
+                case MEMPAT:
+                    if(eventSelector <= 50) {
+                        if(eventSelector < 50*workloadRatio/100){
+                            baseAddr = 0;
+                            readSize = this.memorySize * 4 / 10;
+                        }else{
+                            baseAddr = random.nextInt(this.memorySize);
+                            readSize = random.nextInt(new Random().nextInt(this.memorySize - baseAddr) % 99+1);
+                        }
                         event = new Event(Event.EVENT_TYPE.READ_RAM,
                                 this.memoryBaseAddress+baseAddr, readSize, this, this.currentThread);
-                    }else if(eventSelector <=90){
-                        int baseAddr = random.nextInt(this.memorySize);
-                        int readSize = random.nextInt(this.memorySize - baseAddr);
+                    }else{
+                        if(eventSelector <= 50 + 50*workloadRatio/100){
+                            baseAddr = 0;
+                            readSize = this.memorySize * 4 / 10;
+                        }else{
+                            baseAddr = random.nextInt(this.memorySize);
+                            readSize = random.nextInt(new Random().nextInt(this.memorySize - baseAddr) % 99+1);
+                        }
+                        event = new Event(Event.EVENT_TYPE.WRITE_RAM,
+                                this.memoryBaseAddress+baseAddr, readSize, this, this.currentThread);
+                    }
+                    break;
+                case MEMONLY:
+                    if(eventSelector <= 45) {
+                        baseAddr = random.nextInt(this.memorySize);
+                        readSize = random.nextInt(memorySize - baseAddr);
+                        event = new Event(Event.EVENT_TYPE.READ_RAM,
+                                this.memoryBaseAddress+baseAddr, readSize, this, this.currentThread);
+                    }else{
+                        baseAddr = random.nextInt(this.memorySize);
+                        readSize = random.nextInt(memorySize - baseAddr);
                         event = new Event(Event.EVENT_TYPE.WRITE_RAM,
                                 this.memoryBaseAddress+baseAddr, readSize, this, this.currentThread);
                     }
                     break;
                 case RANDOM:
                     if(eventSelector <= 25) {
-                        int baseAddr = random.nextInt(this.diskSize);
-                        int readSize = random.nextInt(this.diskSize - baseAddr);
+                        baseAddr = random.nextInt(this.diskSize);
+                        readSize = random.nextInt(READ_RANGE);
                         event = new Event(Event.EVENT_TYPE.READ_DISK,
                                 this.diskBaseAddress+baseAddr, readSize, this, this.currentThread);
                     }else if(eventSelector <= 50) {
-                        int baseAddr = random.nextInt(this.diskSize);
-                        int readSize = random.nextInt(this.diskSize - baseAddr);
+                        baseAddr = random.nextInt(this.diskSize);
+                        readSize = random.nextInt(READ_RANGE);
                         event = new Event(Event.EVENT_TYPE.WRITE_DISK,
                                 this.diskBaseAddress+baseAddr, readSize, this, this.currentThread);
                     }else if(eventSelector <= 75) {
-                        int baseAddr = random.nextInt(this.memorySize);
-                        int readSize = random.nextInt(this.memorySize - baseAddr);
+                        baseAddr = random.nextInt(this.memorySize);
+                        readSize = random.nextInt(READ_RANGE);
                         event = new Event(Event.EVENT_TYPE.READ_RAM,
                                 this.memoryBaseAddress+baseAddr, readSize, this, this.currentThread);
                     }else if(eventSelector <= 100) {
-                        int baseAddr = random.nextInt(this.memorySize);
-                        int readSize = random.nextInt(this.memorySize - baseAddr);
+                        baseAddr = random.nextInt(this.memorySize);
+                        readSize = random.nextInt(READ_RANGE);
                         event = new Event(Event.EVENT_TYPE.WRITE_RAM,
                                 this.memoryBaseAddress+baseAddr, readSize, this, this.currentThread);
                     }
                     break;
             }
-            this.currentThread.addCounter();
         }
         return event;
     }
@@ -145,6 +185,10 @@ public class Process extends BaseThread {
         return "\ntotal Exec Time:"+this.getAccumulatedExecutionTime()+
                "\nexecution Time:"+this.getExecutionTime()+
                "\n"+priorityQueue.toString();
+    }
+
+    public String printQueue(){
+        return priorityQueue.toString();
     }
 
 }

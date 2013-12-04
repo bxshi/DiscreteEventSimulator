@@ -37,6 +37,8 @@ public class Main {
                 options.put("type", OperationPattern.TYPE.valueOf(arg.substring(2)));
             }else if(arg.startsWith("-S")){
                 options.put("seek_time", Integer.parseInt(arg.substring(2)));
+            }else if(arg.startsWith("-WR")){
+                options.put("workload_ratio", Integer.parseInt(arg.substring(3)));
             }else if(arg.startsWith("-W")){
                 options.put("work_load", true);
             }
@@ -44,7 +46,8 @@ public class Main {
         }
 
         if(options.keySet().size()<11){
-            logger.error("\ndes [-VM VirtualMemory Size] [-PM Physical Memory Size]\n" +
+            logger.error("\ndes\n" +
+                    "    [-VM VirtualMemory Size] [-PM Physical Memory Size]\n" +
                     "    [-D Disk Size] [-P Process Number]\n" +
                     "    [-TP Thread Per Process] [-M Memory Per Process]\n" +
                     "    [-PS Process Time Slot] [-TS Thread Time Slot]\n" +
@@ -53,7 +56,9 @@ public class Main {
                     "    [-W withWorkload (Optional)]");
             return;
         }
-
+        if(!options.containsKey("workload_ratio")){
+            options.put("workload_ratio", 50);
+        }
         Scheduler scheduler = new Scheduler(
                 0,
                 (Integer)options.get("virtual_memory"),
@@ -65,7 +70,8 @@ public class Main {
                 (Integer)options.get("process_time"),
                 (Integer)options.get("thread_time"),
                 (OperationPattern.TYPE)options.get("type"),
-                (Integer)options.get("operation")
+                (Integer)options.get("operation"),
+                (Integer)options.get("workload_ratio")
         );
         Disk disk = new Disk(
                 (Integer)options.get("seek_time")
@@ -80,8 +86,7 @@ public class Main {
         while(true) {
             Event event = scheduler.getEvent();
             if(event == null){
-                logger.info(scheduler.getAccumulatedExecutionTime());
-                logger.info(scheduler.getPageFaultCount());
+                System.out.println(scheduler.getAccumulatedExecutionTime()+","+scheduler.getPageFaultCount());
                 System.exit(0);
             }else{
                 logger.trace(event.toString());

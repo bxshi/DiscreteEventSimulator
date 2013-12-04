@@ -5,6 +5,7 @@ public class OperationPattern {
         RANDOM,
         SERVER,
         DATABASE,
-        MEMONLY
+        MEMONLY,
+        MEMPAT
     }
 }

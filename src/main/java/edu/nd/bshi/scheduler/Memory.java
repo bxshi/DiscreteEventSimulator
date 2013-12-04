@@ -1,20 +1,24 @@
 package edu.nd.bshi.scheduler;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.HashMap;
 import java.util.Random;
 
 public class Memory {
-    private int blockLoadTime = 4100000;
-    private int blockWriteTime = 4100000;
-    private int blockInMemoryRead = 25;
-    private int blockInMemoryWrite = 25;
+    static Logger logger = LogManager.getLogger(Process.class.getName());
+
+    private int blockLoadTime = 164000;
+    private int blockWriteTime = 164000;
+    private int blockInMemoryRead = 1;
+    private int blockInMemoryWrite = 1;
     private HashMap<Integer, Integer> memorySpace = new HashMap<Integer, Integer>();
     private HashMap<Integer, Integer> LRU = new HashMap<Integer, Integer>();
     private static final int IN_MEM = 1;
     private static final int OUT_MEM = 0;
     private static final int DIRTY = 2;
     private boolean hasLRU = true;
-
     public Memory(int virtualMemSize, int physicalMemSize, boolean hasLRU) {
         this.hasLRU = hasLRU;
         //initialize memory
@@ -32,7 +36,7 @@ public class Memory {
         int time = 0;
         time += this.removeMemory();
         if(this.hasLRU)
-            this.LRU.put(blk, 0);
+            this.LRU.put(blk, 1);
         this.memorySpace.put(blk, IN_MEM);
         return time;
     }
@@ -55,6 +59,8 @@ public class Memory {
             this.memorySpace.put(lowest, OUT_MEM);
             this.LRU.remove(lowest);
 
+            logger.trace("kick out "+lowest);
+
             return time + this.blockLoadTime;
         }else{
             int rdm = (new Random().nextInt() % this.memorySpace.keySet().size());
@@ -69,11 +75,15 @@ public class Memory {
 
     public void read(Event event) {
         int time = 0;
+        int pFault = 0;
+//        logger.trace("start "+LRU.toString());
+//        logger.trace(memorySpace.toString());
         try{
             for(int i = event.getBaseAddress(); i < event.getBaseAddress()+event.getAddressLength(); i++) {
                 if(memorySpace.get(i) == OUT_MEM){
-                    int t = this.loadMemory(i);
-                    if(t > time) time = t;
+                    logger.trace("Block "+i+" out of memory");
+                    time += this.loadMemory(i);
+                    pFault++;
                 }else{
                     if(this.hasLRU){
                         int hit = LRU.get(i);
@@ -85,20 +95,25 @@ public class Memory {
         }catch (Exception err){
             err.printStackTrace();
         }
-        if(time!=0)
-            event.addPageFault(1);
+        event.addPageFault(pFault);
         event.addTime(time+blockInMemoryRead);
+
+//        logger.trace("end"+LRU.toString());
+//        logger.trace(memorySpace.toString());
+
 
     }
 
     public void write(Event event) {
         int time = 0;
+        int pFault = 0;
         try{
             for(int i = event.getBaseAddress(); i < event.getBaseAddress()+event.getAddressLength(); i++) {
                 if(memorySpace.get(i) == OUT_MEM){
-                    int t = this.loadMemory(i);
+                    logger.trace("Block "+i+" out of memory");
+                    time += this.loadMemory(i);
                     memorySpace.put(i, DIRTY);
-                    if(t > time) time = t;
+                    pFault++;
                 }else{
                     if(this.hasLRU){
                         int hit = LRU.get(i);
@@ -110,8 +125,7 @@ public class Memory {
         }catch (Exception err){
             err.printStackTrace();
         }
-        if(time!=0)
-            event.addPageFault(1);
+        event.addPageFault(pFault);
         event.addTime(time+blockInMemoryWrite);
     }
 
