@@ -11,7 +11,8 @@ public class Process extends BaseThread {
 
     private PriorityQueue<Thread> priorityQueue = null;
 
-    private static final int READ_RANGE = 200;
+    private static final int READ_RANGE = 10;
+    private static final int STRIDE = 50;
 
     private int memoryBaseAddress = 0;
     private int memorySize = 0;
@@ -19,6 +20,7 @@ public class Process extends BaseThread {
     private int diskSize = 0;
     private int timeSlot = 0;
     private int workloadRatio = 50; // only used for patterned memory access
+    private int memPos = 0;
     private Thread currentThread = null;
     private OperationPattern.TYPE type;
 
@@ -113,8 +115,21 @@ public class Process extends BaseThread {
             this.currentThread.addCounter();
             switch(this.type){
                 //TODO implement other patterns
-                case SERVER:
+                case WEBSERVER:
+                    baseAddr = random.nextInt(this.memorySize - READ_RANGE);
+                    event =new Event(Event.EVENT_TYPE.READ_RAM,
+                            this.memoryBaseAddress+baseAddr, READ_RANGE, this, this.currentThread);
+                    break;
                 case DATABASE:
+                    if(eventSelector <= 80){
+                        baseAddr = (new Random().nextInt(memorySize/STRIDE - 1)) * STRIDE;
+                        event =new Event(Event.EVENT_TYPE.READ_RAM,
+                                this.memoryBaseAddress+baseAddr, READ_RANGE, this, this.currentThread);
+                    }else{
+                        baseAddr = (new Random().nextInt(memorySize/STRIDE - 1)) * STRIDE;
+                        event = new Event(Event.EVENT_TYPE.WRITE_RAM,
+                                this.memoryBaseAddress+baseAddr, STRIDE, this, this.currentThread);
+                    }
                     break;
                 case MEMPAT:
                     if(eventSelector <= 50) {
