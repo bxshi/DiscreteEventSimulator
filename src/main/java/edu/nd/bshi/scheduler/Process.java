@@ -13,6 +13,7 @@ public class Process extends BaseThread {
 
     private static final int READ_RANGE = 10;
     private static final int STRIDE = 50;
+    private static final double WORKINGSET_THREADHOLD = 0.8;
 
     private int memoryBaseAddress = 0;
     private int memorySize = 0;
@@ -20,14 +21,40 @@ public class Process extends BaseThread {
     private int diskSize = 0;
     private int timeSlot = 0;
     private int workloadRatio = 50; // only used for patterned memory access
+    private int totalWorkingSet = 50; // the pages of total working set
+    private int inMemoryWorkingSet = 0; // the pages that in the memory
     private int memPos = 0;
+
+    public int getPid() {
+        return this.pid;
+    }
+
+    private int pid = 0;
     private Thread currentThread = null;
     private OperationPattern.TYPE type;
 
-    public Process(int memoryBaseAddress, int memorySize, int diskBaseAddress, int diskSize,
-                   int threadNumber, int timeSlot, OperationPattern.TYPE type, int operationPerThread, int workloadRatio) {
+    public double getWorkingSetRatio(){
+        return this.inMemoryWorkingSet / this.totalWorkingSet;
+    }
+
+    public void setInMemoryWorkingSet(int n){
+        this.inMemoryWorkingSet = n;
+    }
+    public int getInMemoryWorkingSet(){
+        return this.inMemoryWorkingSet;
+    }
+
+    public Process(int pid, int memoryBaseAddress, int memorySize, int diskBaseAddress, int diskSize,
+                   int threadNumber, int timeSlot, OperationPattern.TYPE type, int operationPerThread,
+                   int workloadRatio, int physicalMemory) {
+        this.pid = pid;
         this.memoryBaseAddress = memoryBaseAddress;
         this.memorySize = memorySize;
+        this.totalWorkingSet = memorySize;
+        this.inMemoryWorkingSet = physicalMemory - memoryBaseAddress > 0 ? physicalMemory - memoryBaseAddress : 0;
+        if(this.inMemoryWorkingSet > memorySize){
+            this.inMemoryWorkingSet = memorySize;
+        }
         this.diskBaseAddress = diskBaseAddress;
         this.diskSize = diskSize;
         this.timeSlot = timeSlot;
@@ -105,13 +132,14 @@ public class Process extends BaseThread {
         //check if the process finish its work
         if(processFinished()){
             logger.info("process Finished");
+            this.inMemoryWorkingSet = 0;
             return null;
         }
         if (this.switchContext()){
             event = new Event(Event.EVENT_TYPE.SWITCH_THREAD_CONTEXT, this, null);
         }else{
-            int baseAddr;
-            int readSize;
+            int baseAddr=0;
+            int readSize=0;
             this.currentThread.addCounter();
             switch(this.type){
                 //TODO implement other patterns
@@ -155,37 +183,31 @@ public class Process extends BaseThread {
                     }
                     break;
                 case MEMONLY:
-                    if(eventSelector <= 45) {
-                        baseAddr = random.nextInt(this.memorySize);
-                        readSize = random.nextInt(memorySize - baseAddr);
+
+                    if(eventSelector <= 50) {
+                        baseAddr = memPos;
+                        readSize = memorySize / 10;
+                        memPos = (memPos+ memorySize / 10) %(memorySize/10 * 9);
+
                         event = new Event(Event.EVENT_TYPE.READ_RAM,
                                 this.memoryBaseAddress+baseAddr, readSize, this, this.currentThread);
                     }else{
-                        baseAddr = random.nextInt(this.memorySize);
-                        readSize = random.nextInt(memorySize - baseAddr);
+                        baseAddr = memPos;
+                        readSize = memorySize / 10;
+                        memPos = (memPos+ memorySize / 10) %(memorySize/10 * 9);
                         event = new Event(Event.EVENT_TYPE.WRITE_RAM,
                                 this.memoryBaseAddress+baseAddr, readSize, this, this.currentThread);
                     }
                     break;
                 case RANDOM:
-                    if(eventSelector <= 25) {
-                        baseAddr = random.nextInt(this.diskSize);
-                        readSize = random.nextInt(READ_RANGE);
-                        event = new Event(Event.EVENT_TYPE.READ_DISK,
-                                this.diskBaseAddress+baseAddr, readSize, this, this.currentThread);
-                    }else if(eventSelector <= 50) {
-                        baseAddr = random.nextInt(this.diskSize);
-                        readSize = random.nextInt(READ_RANGE);
-                        event = new Event(Event.EVENT_TYPE.WRITE_DISK,
-                                this.diskBaseAddress+baseAddr, readSize, this, this.currentThread);
-                    }else if(eventSelector <= 75) {
+                    if(eventSelector <= 50) {
                         baseAddr = random.nextInt(this.memorySize);
-                        readSize = random.nextInt(READ_RANGE);
+                        readSize = random.nextInt(this.memorySize - baseAddr+1)+1;
                         event = new Event(Event.EVENT_TYPE.READ_RAM,
                                 this.memoryBaseAddress+baseAddr, readSize, this, this.currentThread);
-                    }else if(eventSelector <= 100) {
+                    }else{
                         baseAddr = random.nextInt(this.memorySize);
-                        readSize = random.nextInt(READ_RANGE);
+                        readSize = random.nextInt(this.memorySize - baseAddr+1)+1;
                         event = new Event(Event.EVENT_TYPE.WRITE_RAM,
                                 this.memoryBaseAddress+baseAddr, readSize, this, this.currentThread);
                     }

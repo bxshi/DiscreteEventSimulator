@@ -46,6 +46,14 @@ public class Event {
         return eventType;
     }
 
+    public void addInMemoryWorkSetSize(){
+        if(this.process!=null){
+            this.process.setInMemoryWorkingSet(
+                    this.process.getInMemoryWorkingSet()+1
+            );
+        }
+    }
+
     public void addPageFault(int time){
         if(this.process!=null){
             this.process.addPageFaultCount(time);

@@ -37,10 +37,10 @@ public class Main {
                 options.put("type", OperationPattern.TYPE.valueOf(arg.substring(2)));
             }else if(arg.startsWith("-S")){
                 options.put("seek_time", Integer.parseInt(arg.substring(2)));
-            }else if(arg.startsWith("-WR")){
+            }else if(arg.startsWith("-Wr")){
                 options.put("workload_ratio", Integer.parseInt(arg.substring(3)));
             }else if(arg.startsWith("-W")){
-                options.put("work_load", true);
+                options.put("work_load", MemoryReplacementAlgo.ALGORITHM.valueOf(arg.substring(2)));
             }
 
         }
@@ -53,7 +53,7 @@ public class Main {
                     "    [-PS Process Time Slot] [-TS Thread Time Slot]\n" +
                     "    [-T Thread Operation Pattern (RANDOM|SERVER|DATABASE)]\n" +
                     "    [-O Operations per Thread] [-S Seek Time]\n" +
-                    "    [-W withWorkload (Optional)]");
+                    "    [-Wr workload random ratio][-W schedule pattern (RANDOM|WORKSET|LRU)]");
             return;
         }
         if(!options.containsKey("workload_ratio")){
@@ -71,8 +71,10 @@ public class Main {
                 (Integer)options.get("thread_time"),
                 (OperationPattern.TYPE)options.get("type"),
                 (Integer)options.get("operation"),
-                (Integer)options.get("workload_ratio")
-        );
+                (Integer)options.get("workload_ratio"),
+                (Integer)options.get("physical_memory"),
+                (MemoryReplacementAlgo.ALGORITHM)options.get("work_load")
+                );
         Disk disk = new Disk(
                 (Integer)options.get("seek_time")
         );
@@ -80,8 +82,11 @@ public class Main {
         Memory memory = new Memory(
                 (Integer)options.get("virtual_memory"),
                 (Integer)options.get("physical_memory"),
-                options.keySet().contains("work_load") ? (Boolean)options.get("work_load") : false,
-                disk
+                (Integer)options.get("process_memory"),
+                (Integer)options.get("process"),
+                (MemoryReplacementAlgo.ALGORITHM)options.get("work_load"),
+                disk,
+                scheduler
         );
 
         while(true) {
