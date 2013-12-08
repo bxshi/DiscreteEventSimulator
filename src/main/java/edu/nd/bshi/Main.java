@@ -107,15 +107,19 @@ public class Main {
                         break;
                     case READ_DISK:
                         disk.read(event);
+                        event.addTime(1);
                         break;
                     case WRITE_DISK:
                         disk.write(event);
+                        event.addTime(1);
                         break;
                     case READ_RAM:
                         memory.read(event);
+                        event.addTime(1);
                         break;
                     case WRITE_RAM:
                         memory.write(event);
+                        event.addTime(1);
                         break;
                     case DATA_COMPUTE:
                         event.addTime(1);
